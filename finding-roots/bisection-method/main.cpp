@@ -3,47 +3,50 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
-#include <utility>
+
+struct Result {
+  bool success;
+  double root;
+  int iterations;
+};
 
 class BisectionMethod {
-  std::function<double(double)> func;
-  double lower_limit;
-  double upper_limit;
-  int ITER_LIMIT = 1000;
-  double PRECISION = 0.0001;
-
 public:
-  BisectionMethod(std::function<double(double)> f, int a, int b)
-      : func(std::move(f)), lower_limit(a), upper_limit(b) {}
+  int MAX_ITERATIONS;
+  double PRECISION;
+
+  BisectionMethod() : MAX_ITERATIONS(1000), PRECISION(0.0001) {}
 
   bool oppositeSigns(double a, double b) {
     return (a > 0 && b < 0) || (a < 0 && b > 0);
   }
 
-  std::pair<bool, double> run() {
-    double a = lower_limit, b = upper_limit;
-    double f_a = func(a), f_b = func(b);
+  Result run(std::function<double(double)> f, double a, double b,
+             bool printIterations = true) {
+    double f_a = f(a), f_b = f(b);
     if (!oppositeSigns(f_a, f_b)) {
       std::cout << "Error: f(a) and f(b) must have opposite signs" << std::endl;
-      return {false, 0};
+      return {false, 0, 0};
     }
     double c, f_c;
-    for (int iter = 0; iter < ITER_LIMIT; iter++) {
+    for (int iter = 1; iter <= MAX_ITERATIONS; iter++) {
       c = (a + b) / 2;
-      f_c = func(c);
-      std::cout << "Iteration " << iter + 1 << ":\t";
-      std::cout << "a = " << a << "\t";
-      std::cout << "b = " << b << "\t";
-      std::cout << "c = " << c << "\t";
-      std::cout << "f(c) = " << f_c << std::endl;
+      f_c = f(c);
+      if (printIterations) {
+        std::cout << "Iteration " << iter << ":\t";
+        std::cout << "a = " << a << "\t";
+        std::cout << "b = " << b << "\t";
+        std::cout << "c = " << c << "\t";
+        std::cout << "f(c) = " << f_c << std::endl;
+      }
       if (std::abs(f_c) <= PRECISION)
-        return {true, c};
+        return {true, c, iter};
       if (oppositeSigns(f_a, f_c))
         b = c;
       else
         a = c;
     }
-    return {true, c};
+    return {true, c, MAX_ITERATIONS};
   }
 };
 
@@ -54,7 +57,9 @@ double f(double x) {
 
 int main() {
   printTitle("Bisection Method");
-  BisectionMethod bm(f, 0, 1);
-  std::pair<bool, double> ans = bm.run();
+  BisectionMethod bm;
+  bm.run(f, 0, 1);
+  std::cout << std::endl;
+  bm.run(f, -1, 5);
   return 0;
 }
